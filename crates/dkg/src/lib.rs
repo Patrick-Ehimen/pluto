@@ -32,6 +32,9 @@ mod publish;
 /// Shares distributed to each node in the cluster.
 pub mod share;
 
+/// Step synchronization protocol for DKG peers.
+pub mod sync;
+
 /// Local DKG signing helpers.
 mod signing;
 
