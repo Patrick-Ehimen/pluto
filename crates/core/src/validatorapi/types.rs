@@ -25,6 +25,7 @@ pub use pluto_eth2api::{
         altair::{SignedContributionAndProof, SyncCommitteeContribution, SyncCommitteeMessage},
         phase0::{self, Epoch, Root, Slot, ValidatorIndex},
     },
+    versioned,
 };
 
 /// Attestation data alias for the consensus-spec phase0 type.
@@ -164,13 +165,31 @@ pub struct VersionedAttestation {}
 #[derive(Debug, Clone)]
 pub struct VersionedSignedAggregateAndProof {}
 
-/// Signed validator registration payload. Placeholder.
-#[derive(Debug, Clone)]
-pub struct SignedValidatorRegistration {}
+/// Signed validator (builder) registration payload.
+///
+/// Wraps the versioned eth2api registration so the
+/// [`Handler::submit_validator_registrations`](super::handler::Handler::submit_validator_registrations)
+/// implementation has access to the same data the Go
+/// `*eth2api.VersionedSignedValidatorRegistration` carries.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SignedValidatorRegistration(
+    /// Wrapped versioned registration.
+    pub versioned::VersionedSignedValidatorRegistration,
+);
 
-/// Signed voluntary exit payload. Placeholder.
-#[derive(Debug, Clone)]
-pub struct SignedVoluntaryExit {}
+/// Signed voluntary exit payload.
+///
+/// Wraps `phase0::SignedVoluntaryExit` so the
+/// [`Handler::submit_voluntary_exit`](super::handler::Handler::submit_voluntary_exit)
+/// implementation has access to the same data the Go
+/// `*eth2p0.SignedVoluntaryExit` carries.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SignedVoluntaryExit(
+    /// Wrapped phase0 signed voluntary exit.
+    pub phase0::SignedVoluntaryExit,
+);
 
 /// Beacon-committee selection payload. Placeholder.
 #[derive(Debug, Clone)]
