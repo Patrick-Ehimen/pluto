@@ -25,6 +25,7 @@ pub use pluto_eth2api::{
         altair::{SignedContributionAndProof, SyncCommitteeContribution, SyncCommitteeMessage},
         phase0::{self, Epoch, Root, Slot, ValidatorIndex},
     },
+    v1::{BeaconCommitteeSelection, SyncCommitteeSelection},
     versioned,
 };
 
@@ -143,6 +144,22 @@ pub struct AttestationDataResponse {
     pub data: AttestationData,
 }
 
+/// Response envelope for the `beacon_committee_selections` endpoint — a `data`
+/// array of aggregated selection proofs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BeaconCommitteeSelectionsResponse {
+    /// Aggregated beacon-committee selection proofs.
+    pub data: Vec<BeaconCommitteeSelection>,
+}
+
+/// Response envelope for the `sync_committee_selections` endpoint — a `data`
+/// array of aggregated selection proofs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SyncCommitteeSelectionsResponse {
+    /// Aggregated sync-committee selection proofs.
+    pub data: Vec<SyncCommitteeSelection>,
+}
+
 /// Validator payload. Placeholder.
 #[derive(Debug, Clone)]
 pub struct Validator {}
@@ -190,14 +207,6 @@ pub struct SignedVoluntaryExit(
     /// Wrapped phase0 signed voluntary exit.
     pub phase0::SignedVoluntaryExit,
 );
-
-/// Beacon-committee selection payload. Placeholder.
-#[derive(Debug, Clone)]
-pub struct BeaconCommitteeSelection {}
-
-/// Sync-committee selection payload. Placeholder.
-#[derive(Debug, Clone)]
-pub struct SyncCommitteeSelection {}
 
 /// Validator-index request body for the `attester_duties` and
 /// `sync_committee_duties` endpoints.
