@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use k256::SecretKey;
-use pluto_core::{deadline::DeadlinerHandle, types::Duty};
+use pluto_core::{deadline::DeadlinerHandle, gater::DutyGaterFn, types::Duty};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 
@@ -42,7 +42,7 @@ pub struct Config {
     /// Expired-duty receiver paired with `deadliner`.
     pub expired_rx: mpsc::Receiver<Duty>,
     /// Duty admission gate.
-    pub duty_gater: qbft::DutyGater,
+    pub duty_gater: DutyGaterFn,
     /// External message broadcaster.
     pub broadcaster: qbft::Broadcaster,
     /// Consensus debugger.
