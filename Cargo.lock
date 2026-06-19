@@ -5638,6 +5638,7 @@ dependencies = [
  "dyn-clone",
  "dyn-eq",
  "ethereum_ssz",
+ "futures",
  "hex",
  "pluto-build-proto",
  "pluto-cluster",
