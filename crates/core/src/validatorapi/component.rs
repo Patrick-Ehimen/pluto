@@ -1336,11 +1336,13 @@ impl Handler for Component {
             },
         };
 
-        let response = self
-            .eth2_cl
-            .post_state_validators(request)
-            .await
-            .map_err(|err| upstream_call_failed("validators", err.into()))?;
+        let response = tokio::time::timeout(
+            UPSTREAM_REQUEST_TIMEOUT,
+            self.eth2_cl.post_state_validators(request),
+        )
+        .await
+        .map_err(|_| upstream_timeout("validators"))?
+        .map_err(|err| upstream_call_failed("validators", err.into()))?;
 
         let payload: GetStateValidatorsResponseResponse = match response {
             PostStateValidatorsResponse::Ok(payload) => payload,
@@ -5831,6 +5833,37 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(err.status_code, StatusCode::BAD_REQUEST);
+    }
+
+    /// Upstream stall longer than [`UPSTREAM_REQUEST_TIMEOUT`] surfaces as
+    /// 504.
+    #[tokio::test(start_paused = true)]
+    async fn validators_upstream_timeout_returns_504() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/eth/v1/beacon/states/head/validators"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_delay(UPSTREAM_REQUEST_TIMEOUT * 2)
+                    .set_body_json(GetStateValidatorsResponseResponse {
+                        data: vec![],
+                        execution_optimistic: false,
+                        finalized: false,
+                    }),
+            )
+            .mount(&server)
+            .await;
+
+        let component = make_component_with_upstream(&server, HashMap::new());
+        let err = component
+            .validators(ValidatorsOpts {
+                state: "head".to_owned(),
+                pubkeys: vec![],
+                indices: vec![],
+            })
+            .await
+            .unwrap_err();
+        assert_eq!(err.status_code, StatusCode::GATEWAY_TIMEOUT);
     }
 
     /// A malformed pubkey from the upstream surfaces as 502.
