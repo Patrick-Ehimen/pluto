@@ -5455,6 +5455,7 @@ dependencies = [
  "bon",
  "chrono",
  "flate2",
+ "futures",
  "hex",
  "k256",
  "pluto-build-proto",
@@ -5471,6 +5472,7 @@ dependencies = [
  "reqwest 0.13.4",
  "serde",
  "serde_json",
+ "serde_with",
  "tar",
  "tempfile",
  "test-case",
@@ -5479,6 +5481,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "url",
+ "vise",
  "wiremock",
 ]
 
@@ -5733,6 +5736,8 @@ dependencies = [
  "chrono",
  "ethereum_ssz",
  "ethereum_ssz_derive",
+ "eventsource-stream",
+ "futures",
  "hex",
  "http",
  "oas3-gen-support",
