@@ -49,6 +49,8 @@ pub struct TestHandler {
     pub submitted_blinded_proposal: Arc<Mutex<Option<VersionedSignedBlindedProposal>>>,
     /// Records the last [`ValidatorsOpts`] passed to [`Handler::validators`].
     pub validators_opts: Arc<Mutex<Option<ValidatorsOpts>>>,
+    /// Value returned by [`Handler::sync_committee_contribution`].
+    pub sync_committee_contribution_response: Option<EthResponse<SyncCommitteeContribution>>,
     /// Records the last registrations submitted via
     /// [`Handler::submit_validator_registrations`].
     pub submitted_registrations: Arc<Mutex<Option<Vec<SignedValidatorRegistration>>>>,
@@ -71,6 +73,18 @@ pub struct TestHandler {
     pub beacon_committee_selections_response: Option<EthResponse<Vec<BeaconCommitteeSelection>>>,
     /// Value returned by [`Handler::sync_committee_selections`].
     pub sync_committee_selections_response: Option<EthResponse<Vec<SyncCommitteeSelection>>>,
+    /// Records the messages submitted via
+    /// [`Handler::submit_sync_committee_messages`].
+    pub submitted_sync_messages: Arc<Mutex<Option<Vec<SyncCommitteeMessage>>>>,
+    /// Records the contributions submitted via
+    /// [`Handler::submit_sync_committee_contributions`].
+    pub submitted_sync_contributions: Arc<Mutex<Option<Vec<SignedContributionAndProof>>>>,
+    /// Records the selections passed to
+    /// [`Handler::sync_committee_selections`].
+    pub submitted_sync_selections: Arc<Mutex<Option<Vec<SyncCommitteeSelection>>>>,
+    /// Records the last [`SyncCommitteeContributionOpts`] passed to
+    /// [`Handler::sync_committee_contribution`].
+    pub sync_committee_contribution_opts: Arc<Mutex<Option<SyncCommitteeContributionOpts>>>,
 }
 
 impl TestHandler {
@@ -115,6 +129,15 @@ impl TestHandler {
     /// Sets the response returned by [`Handler::attestation_data`].
     pub fn with_attestation_data(mut self, response: AttestationDataResponse) -> Self {
         self.attestation_data_response = Some(response);
+        self
+    }
+
+    /// Sets the response returned by [`Handler::sync_committee_contribution`].
+    pub fn with_sync_committee_contribution(
+        mut self,
+        response: EthResponse<SyncCommitteeContribution>,
+    ) -> Self {
+        self.sync_committee_contribution_response = Some(response);
         self
     }
 
@@ -278,8 +301,12 @@ impl Handler for TestHandler {
 
     async fn sync_committee_selections(
         &self,
-        _selections: Vec<SyncCommitteeSelection>,
+        selections: Vec<SyncCommitteeSelection>,
     ) -> Result<EthResponse<Vec<SyncCommitteeSelection>>, ApiError> {
+        *self
+            .submitted_sync_selections
+            .lock()
+            .expect("submitted_sync_selections lock") = Some(selections);
         match self.sync_committee_selections_response.as_ref() {
             Some(r) => Ok(r.clone()),
             None => unimplemented!("sync_committee_selections not stubbed in TestHandler"),
@@ -315,22 +342,37 @@ impl Handler for TestHandler {
 
     async fn sync_committee_contribution(
         &self,
-        _opts: SyncCommitteeContributionOpts,
+        opts: SyncCommitteeContributionOpts,
     ) -> Result<EthResponse<SyncCommitteeContribution>, ApiError> {
-        unimplemented!("sync_committee_contribution not stubbed in TestHandler")
+        *self
+            .sync_committee_contribution_opts
+            .lock()
+            .expect("sync_committee_contribution_opts lock") = Some(opts);
+        Ok(self
+            .sync_committee_contribution_response
+            .clone()
+            .expect("sync_committee_contribution not stubbed in TestHandler"))
     }
 
     async fn submit_sync_committee_contributions(
         &self,
-        _contributions: Vec<SignedContributionAndProof>,
+        contributions: Vec<SignedContributionAndProof>,
     ) -> Result<(), ApiError> {
-        unimplemented!("submit_sync_committee_contributions not stubbed in TestHandler")
+        *self
+            .submitted_sync_contributions
+            .lock()
+            .expect("submitted_sync_contributions lock") = Some(contributions);
+        Ok(())
     }
 
     async fn submit_sync_committee_messages(
         &self,
-        _messages: Vec<SyncCommitteeMessage>,
+        messages: Vec<SyncCommitteeMessage>,
     ) -> Result<(), ApiError> {
-        unimplemented!("submit_sync_committee_messages not stubbed in TestHandler")
+        *self
+            .submitted_sync_messages
+            .lock()
+            .expect("submitted_sync_messages lock") = Some(messages);
+        Ok(())
     }
 }
