@@ -7,6 +7,7 @@ use libp2p::Multiaddr;
 use pluto_eth2util::enr::Record;
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
+use url::Url;
 
 use crate::peer::{
     AddrInfo, MutablePeer, Peer, PeerError, addr_infos_from_p2p_addrs, peer_id_from_key,
@@ -159,6 +160,21 @@ pub async fn new_relays(
     Ok(resp)
 }
 
+/// Strips embedded userinfo (basic-auth credentials) from a URL string before
+/// it is passed to a log field so tokens and passwords cannot appear in logs.
+fn redact_url(raw: &str) -> String {
+    let Ok(mut url) = Url::parse(raw) else {
+        return raw.to_owned();
+    };
+    if url.username().is_empty() && url.password().is_none() {
+        return raw.to_owned();
+    }
+    if url.set_username("").is_err() || url.set_password(None).is_err() {
+        return "<redacted>".to_owned();
+    }
+    url.to_string()
+}
+
 /// Continuously resolves relay multiaddrs from an HTTP URL and updates the
 /// MutablePeer.
 ///
@@ -184,7 +200,7 @@ async fn resolve_relay(
         {
             Ok(addrs) => addrs,
             Err(e) => {
-                tracing::error!(err = %e, url = %raw_url, "Failed resolving relay addresses from URL");
+                tracing::error!(err = %e, url = %redact_url(&raw_url), "Failed resolving relay addresses from URL");
                 return;
             }
         };
@@ -208,7 +224,7 @@ async fn resolve_relay(
                     let peer = Peer::new_relay_peer(&infos[0]);
                     info!(
                         peer = %peer.name,
-                        url = %raw_url,
+                        url = %redact_url(&raw_url),
                         addrs = ?peer.addresses,
                         "Resolved new relay"
                     );
@@ -389,4 +405,30 @@ fn addr_info_from_p2p_addr(addr: &Multiaddr) -> std::result::Result<AddrInfo, Pe
     let mut infos = addr_infos_from_p2p_addrs(std::slice::from_ref(addr))?;
 
     infos.pop().ok_or(PeerError::MissingPeerIdInMultiaddr)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::redact_url;
+
+    #[test]
+    fn redact_url_strips_basic_auth_credentials() {
+        let raw = "https://user:s3cr3t@relay.example.com/path";
+        let result = redact_url(raw);
+        assert!(!result.contains("user"), "username leaked: {result}");
+        assert!(!result.contains("s3cr3t"), "password leaked: {result}");
+        assert!(result.contains("relay.example.com"), "host should remain: {result}");
+    }
+
+    #[test]
+    fn redact_url_is_noop_when_no_credentials() {
+        let raw = "https://relay.example.com/path";
+        assert_eq!(redact_url(raw), raw);
+    }
+
+    #[test]
+    fn redact_url_returns_original_for_unparseable_input() {
+        let raw = "not a url %%";
+        assert_eq!(redact_url(raw), raw);
+    }
 }
