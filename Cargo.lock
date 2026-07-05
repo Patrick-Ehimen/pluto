@@ -5071,6 +5071,7 @@ dependencies = [
  "tracing",
  "url",
  "vise",
+ "walkdir",
  "wiremock",
 ]
 
