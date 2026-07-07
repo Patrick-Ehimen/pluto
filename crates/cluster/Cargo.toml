@@ -29,6 +29,7 @@ pluto-ssz.workspace = true
 k256.workspace = true
 tokio.workspace = true
 futures.workspace = true
+tracing.workspace = true
 reqwest = { workspace = true, features = ["json", "stream"] }
 # Workaround to use test code from different crate.
 # See: https://github.com/NethermindEth/pluto/pull/285
