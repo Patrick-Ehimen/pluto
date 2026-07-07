@@ -1303,8 +1303,17 @@ mod tests {
             .auth_token("super-secret-token".to_string())
             .build();
         let rendered = format!("{cfg:?}");
-        assert!(!rendered.contains("super-secret-token"), "token leaked in Debug: {rendered}");
-        assert!(rendered.contains("<redacted>"), "expected <redacted> marker in Debug: {rendered}");
-        assert!(rendered.contains("https://keymanager.example"), "address should be visible");
+        assert!(
+            !rendered.contains("super-secret-token"),
+            "token leaked in Debug: {rendered}"
+        );
+        assert!(
+            rendered.contains("<redacted>"),
+            "expected <redacted> marker in Debug: {rendered}"
+        );
+        assert!(
+            rendered.contains("https://keymanager.example"),
+            "address should be visible"
+        );
     }
 }
